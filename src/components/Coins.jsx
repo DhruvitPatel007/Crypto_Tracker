@@ -2,11 +2,12 @@ import React, { useState } from "react";
 import axios from "axios";
 import { server } from "../index";
 import { useEffect } from "react";
-import { Container, Heading, VStack, Text, Image } from "@chakra-ui/react";
+import { Container, Radio, RadioGroup } from "@chakra-ui/react";
 import Loader from "./Loader";
-import { HStack } from "@chakra-ui/react";
+import { HStack, Button } from "@chakra-ui/react";
 import ErrorComponent from "./ErrorComponent";
-
+import CoinsCard from "./CoinsCard";
+ 
 const Coins = () => {
   const [coins, setCoins] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -14,11 +15,22 @@ const Coins = () => {
   const [page, setPage] = useState(1);
   const [currency, setCurrency] = useState("inr");
 
+  const currencySymbol =
+    currency === "inr" ? "₹" : currency === "eur" ? "€" : "$";
+
+  const changePage = (page) => {
+    setPage(page);
+    setLoading(true);
+  };
+
+  const btns = new Array(132).fill(1);
+
   useEffect(() => {
     const fetchCoins = async () => {
       try {
-        const { data } = await axios.get(`${server}/coins/markets?vs_currency=${currency}&page=${page}`);
-        console.log(data);
+        const { data } = await axios.get(
+          `${server}/coins/markets?vs_currency=${currency}&page=${page}`
+        );
         setCoins(data);
         setLoading(false);
       } catch (error) {
@@ -28,7 +40,7 @@ const Coins = () => {
     };
 
     fetchCoins();
-  }, [currency,page]);
+  }, [currency, page]);
 
   if (error) return <ErrorComponent message={"Error while fetching coins"} />;
 
@@ -38,51 +50,47 @@ const Coins = () => {
         <Loader />
       ) : (
         <>
-          <HStack wrap={"wrap"}>
+
+          <RadioGroup value={currency} onChange={setCurrency} p={"8"}>
+            <HStack>
+              <Radio value={"inr"}>INR</Radio>
+              <Radio value={"usd"}>USD</Radio>
+              <Radio value={"eur"}>EURO</Radio>
+
+            </HStack>
+          </RadioGroup>
+
+          <HStack wrap={"wrap"} justifyContent={"space-evenly"}>
             {coins.map((i) => (
               <CoinsCard
+                id={i.id}
                 key={i.id}
                 name={i.name}
                 img={i.image}
-                rank={i.trust_score_rank}
-                url={i.url}
+                price={i.current_price}
+                symbol={i.symbol}
+                currencySymbol={currencySymbol}
               />
             ))}
+          </HStack>
+
+          <HStack  w={"full"} overflowX={"auto"} p={"8"}>
+            {btns.map((item, index) => (
+              <Button
+              key={index}
+                bgColor={"blackAlpha.900"}
+                color={"white"}
+                onClick={() => changePage(index + 1)}
+              >
+                {index+1}
+              </Button>
+            ))
+            }
           </HStack>
         </>
       )}
     </Container>
   );
 };
-
-const CoinsCard = ({ name, img, rank, url }) => (
-  <a href={url} target={"blank"}>
-    <VStack
-      w={"52"}
-      shadow={"lg"}
-      p={"8"}
-      borderRadius={"lg"}
-      transition={"all 0.3s"}
-      m={"4"}
-      css={{
-        "&:hover": {
-          transform: "scale(1.1)",
-        },
-      }}
-    >
-      <Image
-        src={img}
-        w={"10"}
-        h={"10"}
-        objectFit={"contain"}
-        alt={"Exchanges"}
-      />
-      <Heading size={"md"} noOfLines={1}>
-        {rank}
-      </Heading>
-      <Text noOfLines={"1"}>{name}</Text>
-    </VStack>
-  </a>
-);
 
 export default Coins;
